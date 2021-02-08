@@ -1,3 +1,13 @@
+#############################################
+# Name: Son Chau (sonchau@my.unt.edu)
+# Course: CSE 5580 Networking Spring 2021
+# Date: 02/07/2021
+# Description: Server UDP program accept 1 
+# argument port number, simulate 30% packet loss
+# through random number, print PING when receive
+# message from client then send a message back
+# Use Ctrl-C or Ctrl-Break to terminate the program
+#############################################
 import argparse
 import random
 import socket
