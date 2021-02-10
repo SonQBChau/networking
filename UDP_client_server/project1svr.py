@@ -31,7 +31,7 @@ def main(port_number):
 
         if random.random() < .3: # simulate 30% packet loss
             print("[server]: dropped packet")
-        else:# Sending a reply to client
+        else:
             print("[client]: {}".format(message))
             server_socket.sendto(bytes_to_send, address)
   
