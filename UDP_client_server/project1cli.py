@@ -34,7 +34,7 @@ def main(host_name, port_number):
             start = timeit.default_timer()  # start timing
             # Send to server using created UDP socket
             client_socket.sendto(bytes_to_send, (host_name, int(port_number)))
-            msg_from_server = client_socket.recvfrom(buffer_size)
+            msg_from_server = client_socket.recvfrom(buffer_size) # receive back from server
             stop = timeit.default_timer()  # stop timing
             rtt = (stop - start) * 1000
             print("RTT={:.6f} ms".format(rtt))
