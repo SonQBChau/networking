@@ -12,6 +12,7 @@ import socket
 import timeit
 from statistics import mean
 
+
 def main(host_name, port_number):
     client_msg = "PING"
     bytes_to_send = str.encode(client_msg)
@@ -22,28 +23,28 @@ def main(host_name, port_number):
     rtt_list = []
 
     # Create a UDP socket at client side
-    client_socket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
+    client_socket = socket.socket(
+        family=socket.AF_INET, type=socket.SOCK_DGRAM)
     # time out set to 1 second
     client_socket.settimeout(1)
 
-    for trial in range (0, trials):
-        print("{}: Sent...".format(trial+1), end =" ")
+    for trial in range(0, trials):
+        print("{}: Sent...".format(trial+1), end=" ")
         try:
-            start = timeit.default_timer()
+            start = timeit.default_timer()  # start timing
             # Send to server using created UDP socket
-            client_socket.sendto(bytes_to_send, ('127.0.0.1', int(port_number)))
+            client_socket.sendto(bytes_to_send, (host_name, int(port_number)))
             msg_from_server = client_socket.recvfrom(buffer_size)
-            stop = timeit.default_timer()
+            stop = timeit.default_timer()  # stop timing
             rtt = (stop - start) * 1000
             print("RTT={:.6f} ms".format(rtt))
             rtt_list.append(rtt)
             no_msg_received += 1
 
-            
         except:
             print("Request time out!")
             no_msg_loss += 1
-    
+
     print("The number of messages sent: {}".format(trials))
     print("The number of messages received: {}".format(no_msg_received))
     print("The message loss rate: {:.0%}".format(no_msg_loss/trials))
@@ -54,8 +55,8 @@ def main(host_name, port_number):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("HOST_NAME", help="Host name")
-    parser.add_argument("PORT_NUMBER", help="Port number")
+    parser.add_argument("host_name", help="For example: cse05")
+    parser.add_argument("port_number", help="For example: 8001")
     args = parser.parse_args()
 
-    main(args.HOST_NAME, args.PORT_NUMBER)
+    main(args.host_name, args.port_number)

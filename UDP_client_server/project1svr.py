@@ -17,11 +17,9 @@ def main(port_number):
     msg_from_server = "PONG"
     bytes_to_send = str.encode(msg_from_server)
 
-    # Create a datagram socket
+    # Create a UDP socket at server side
     server_socket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
-
-    # Bind to address and ip
-    server_socket.bind(('127.0.0.1', int(port_number)))
+    server_socket.bind(('0.0.0.0', int(port_number))) #0.0.0.0 means all ip can connect to it
     print("[server]: ready to accept data...")
 
     # Listen for incoming datagrams
@@ -29,6 +27,7 @@ def main(port_number):
         bytesAddressPair = server_socket.recvfrom(buffer_size)
         message = bytesAddressPair[0]
         address = bytesAddressPair[1]
+        print("[message]: {}".format(message))
 
         if random.random() < .3: # simulate 30% packet loss
             print("[server]: dropped packet")
@@ -39,7 +38,7 @@ def main(port_number):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("PORT_NUMBER", help="Port number")
+    parser.add_argument("port_number", help="For example: 8001")
     args = parser.parse_args()
 
-    main(args.PORT_NUMBER)
+    main(args.port_number)
