@@ -19,12 +19,12 @@ def main(port_number):
 
     # Create a UDP socket at server side
     server_socket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
-    server_socket.bind(('0.0.0.0', int(port_number))) #0.0.0.0 means all ip can connect to it
+    server_socket.bind(('0.0.0.0', int(port_number))) # 0.0.0.0 means all ip can connect to it
     print("[server]: ready to accept data...")
 
-    # Listen for incoming datagrams
+    # Listen for incoming messages
     while(True):
-        bytesAddressPair = server_socket.recvfrom(buffer_size)
+        bytesAddressPair = server_socket.recvfrom(buffer_size) # receive a message
         message = bytesAddressPair[0]
         address = bytesAddressPair[1]
         print("[message]: {}".format(message))
@@ -33,7 +33,7 @@ def main(port_number):
             print("[server]: dropped packet")
         else:
             print("[client]: {}".format(message))
-            server_socket.sendto(bytes_to_send, address)
+            server_socket.sendto(bytes_to_send, address) # reply a message
   
 
 if __name__ == "__main__":
