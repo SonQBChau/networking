@@ -13,12 +13,80 @@
 # moving on to the next port to scan
 #############################################
 import argparse
+import sys 
+import socket 
+
 
 def main(hostname, protocol, portlow, porthigh):
-    print(hostname)
-    print(protocol)
-    print(portlow)
-    print(porthigh)
+
+    print ("scanning host={}, protocol={}, ports: {} -> {}".format(hostname, protocol, portlow, porthigh))
+    host_ip = socket.gethostbyname('localhost')
+    #print("host name IP is: {}".format(target))
+
+    if protocol  == 'tcp':
+        
+        try: 
+        # scan ports from low to high
+           
+            
+            for port in range(int(portlow), int(porthigh)): 
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
+                # time out set to 1 second
+                socket.setdefaulttimeout(1) 
+                service_name = 'svc name unavail'
+                try:
+                    #check if the service available 
+                    service_name = socket.getservbyport(port, protocol)
+                except:
+                    pass
+
+                # check for connection open or  not
+                result = s.connect_ex((host_ip,port)) 
+                if result == 0: 
+                    print("Port {} open: {}".format(port, service_name)) 
+                else:
+                    print("Port {} closed: {}".format(port, service_name)) 
+            s.close() 
+        except KeyboardInterrupt: 
+                print("Exitting Program !!!!") 
+                sys.exit() 
+        except socket.gaierror: 
+                print("Hostname Could Not Be Resolved !!!!") 
+                sys.exit() 
+        except socket.error: 
+                print("Server not responding !!!!") 
+                sys.exit() 
+       
+    elif protocol  == 'udp':
+        # scan ports from low to high
+        for port in range(int(portlow), int(porthigh)): 
+            try:  
+                bytes_to_send = str.encode('hello')
+                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                service_name = 'svc name unavail'
+                try:
+                    #check if the service available 
+                    service_name = socket.getservbyport(port, protocol)
+                except:
+                    pass
+                # time out set to 1 second
+                s.settimeout(1)
+                print(port)
+                s.sendto(bytes_to_send, (hostname, port))
+                data, address = s.recvfrom(1024)
+                if data != None:
+                    print("Port {} open: {}".format(port, service_name)) 
+                else:
+                    print("Port {} open: {}".format(port, service_name)) 
+                s.close()
+            except:
+                print("Request time out!")
+    else:
+        print("unknown protocol")
+   
+    
+
+
   
 
 if __name__ == "__main__":
