@@ -14,8 +14,10 @@
 #############################################
 import argparse
 import socket 
+import time
 
-# attempt to get port name
+# get port name from the built-in list
+# return 'svc name unavail' otherwise
 def get_port_name(port, protocol):
     service_name = 'svc name unavail'
     try: # attempt to get port name
@@ -36,6 +38,7 @@ def scan_ports(host_ip, protocol,port_low, port_high):
         print('invalid protocol: {}. Specify "tcp" or "udp"'.format(protocol))
         
 # perform tcp scan for each port
+# return only open port
 def tcp_scan(ip, port):
     tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     tcp.settimeout(1)
@@ -50,13 +53,14 @@ def tcp_scan(ip, port):
 
 
 # perform udp scan for each port
+# return 
 def udp_scan(ip, port):
     
-    retries = 5 # UDP loss may occur so we send mutiple times
+    retries = 3 # UDP loss may occur so we send mutiple times
     port_open = False
-    port_filtered_open = False
+    port_filter_open = False
  
-    for _ in range(retries): 
+    for i in range(retries): 
         udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         # adjust timeout will detect more or less false positive
         # 1 second works best for me
@@ -68,28 +72,48 @@ def udp_scan(ip, port):
             udp.recv(1024)
             port_open = True 
             break
-
+        # except Exception as e:
+        #     print(e)
+        # finally:   
+        #     udp.close()
+        #     time.sleep(0.1)
+        
         except socket.timeout:
             # if socket timeout, the port maybe open 
             # since server does not send anything back  
-            port_filtered_open = True
-            break
+
+            # question is it open or close???
+            if i == 1:
+                port_filter_open = True
+            continue
 
         except socket.error:
             # if socket error, port is closed
+            if i == 1:
+                port_open = False
             continue 
         finally:   
             udp.close()
+            time.sleep(0.1)
+        
+       
     service_name = get_port_name(port, 'udp')
+    # print(port)
+    # print('===========')
+    # time.sleep(1)
+    
     if  port_open:
         print("Port {} open: {}".format(port, service_name)) 
-    elif port_filtered_open and service_name != 'svc name unavail':
+    elif port_filter_open and service_name != 'svc name unavail':
         print("Port {} open: {}".format(port, service_name)) 
+    elif not port_filter_open and service_name != 'svc name unavail':
+        print("Port {} closed: {}".format(port, service_name)) 
     elif not port_open and service_name != 'svc name unavail':
         print("Port {} closed: {}".format(port, service_name)) 
+        
 
 
-    udp.close() 
+    # udp.close() 
 
 
     
