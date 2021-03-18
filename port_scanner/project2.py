@@ -16,105 +16,123 @@ import argparse
 import sys 
 import socket 
 from contextlib import closing
+import errno
+import select
+import struct
 
-
-
-def scan_range(host_ip, port_low, port_high):
-    for port in range(port_low, port_high+1):
-        tcp_scan(host_ip, port)
-        
-
-
-def tcp_scan(ip, port):
-    try:
-        tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        service_name = socket.getservbyport(port, 'tcp')
-        if not tcp.connect_ex((ip, port)):
-            print("Port {} open: {}".format(port, service_name)) 
-        else:
-            print("Port {} closed: {}".format(port, service_name)) 
-        tcp.close()
-    except OSError:
-        print("svc name unavail")
-    except Exception:
+# attempt to get port name
+def get_port_name(port, protocol):
+    service_name = 'svc name unavail'
+    try: # attempt to get port name
+        service_name = socket.getservbyport(port, protocol)
+    except:
         pass
+    return service_name
 
-
-  
-
+# run specific protocol on port range
+def scan_ports(host_ip, protocol,port_low, port_high):
+    if protocol.lower() == 'tcp':
+        for port in range(port_low, port_high+1):
+            tcp_scan(host_ip, port)
+    elif protocol.lower() == 'udp':
+        for port in range(port_low, port_high+1):
+            udp_scan(host_ip, port)
+    else:
+        print('invalid protocol: {}. Specify "tcp" or "udp"'.format(protocol))
         
-   
-   
-
-def main(hostname, protocol, portlow, porthigh):
-    socket.setdefaulttimeout(1)
-    print ("scanning host={}, protocol={}, ports: {} -> {}".format(hostname, protocol, portlow, porthigh))
-    host_ip = socket.gethostbyname(hostname)
-    scan_range(host_ip, int(portlow), int(porthigh))
-
+# perform tcp scan for each port
+def tcp_scan(ip, port):
+    
+    tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    tcp.settimeout(1)
+    try:
+        service_name = get_port_name(port, 'tcp')
+        if not tcp.connect((ip, port)): # port is open
+            print("Port {} open: {}".format(port, service_name)) 
+    except Exception as e: # ignore refused connection
+        pass
+    finally: # close port when done
+        tcp.close()
+    
+    '''
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
+    # time out set to 1 second
+    socket.setdefaulttimeout(1) 
+    service_name = 'svc name unavail'
+    try:
+        #check if the service available 
+        service_name = socket.getservbyport(port, 'tcp')
+    except:
+        pass
+    # check for connection open or  not
+    result = s.connect_ex((ip,port)) 
+    if result == 0: 
+        print("Port {} open: {}".format(port, service_name)) 
+    else:
+        print("Port {} closed: {}".format(port, service_name)) 
+    s.close() 
     '''
 
-    print ("scanning host={}, protocol={}, ports: {} -> {}".format(hostname, protocol, portlow, porthigh))
-    host_ip = socket.gethostbyname('localhost')
-    #print("host name IP is: {}".format(target))
+    
 
-    if protocol  == 'tcp':
-        for port in range(int(portlow), int(porthigh)+1): 
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
-            # time out set to 1 second
-            socket.setdefaulttimeout(1) 
-            service_name = 'svc name unavail'
+# perform udp scan
+def udp_scan(ip, port):
+    service_name = 'svc name unavail'
+    udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    udp.settimeout(1)
+    
+
+    portOpen = False
+    have_name = False
+    bytes_to_send = str.encode('hello')
+    port_open = False
+ 
+    for _ in range(5): # UDP packet loss may occur so we send twice to make sure
+        try:
+            udp.connect( (ip, port)) 
+            udp.send(bytes(0))
+            udp.recv(1024)
+            print("Port {} open: {}".format(port, service_name)) 
+            break
+
+        except socket.timeout:
             try:
-                #check if the service available 
-                service_name = socket.getservbyport(port, protocol)
+                service_name = socket.getservbyport(port, 'udp')
             except:
                 pass
-            # check for connection open or  not
-            result = s.connect_ex((host_ip,port)) 
-            if result == 0: 
-                print("Port {} open: {}".format(port, service_name)) 
-            else:
-                print("Port {} closed: {}".format(port, service_name)) 
-            s.close() 
-     
-            
-       
-    elif protocol  == 'udp':
-        # scan ports from low to high
-        for port in range(int(portlow), int(porthigh)+1): 
-            try:  
-                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                # time out set to 1 second
-                socket.setdefaulttimeout(1) 
-                service_name = 'svc name unavail'
-                try:
-                    #check if the service available 
-                    service_name = socket.getservbyport(port, protocol)
-                except:
-                    pass
-                # check for connection open or  not
-                result = s.connect_ex((host_ip,port)) 
-                if result == 0: 
-                    print("Port {} open: {}".format(port, service_name)) 
-                else:
-                    print("Port {} closed: {}".format(port, service_name)) 
-                s.close() 
-            except KeyboardInterrupt: 
-                print("Exitting Program !!!!") 
-                sys.exit() 
-            except socket.gaierror: 
-                    print("Hostname Could Not Be Resolved !!!!") 
-                    sys.exit() 
-            except socket.error: 
-                    print("Server not responding !!!!") 
-                    sys.exit() 
-    else:
-        print("unknown protocol")
-   
-    '''
+            print("Port {} open filtered: {}".format(port, service_name)) 
+            break
+
+        except socket.error:
+            # print("Port {} closed: {}".format(port, service_name)) 
+            continue
+        finally:   
+            udp.close()
+    if not port_open:
+            try:
+                service_name = socket.getservbyport(port, 'udp')
+            except:
+                pass
+            print("Port {} closed: {}".format(port, service_name)) 
 
 
-  
+    udp.close() 
+
+
+    
+
+def main(hostname, protocol, portlow, porthigh):
+    print ("scanning host={}, protocol={}, ports: {} -> {}".
+    format(hostname, protocol, portlow, porthigh))
+    # check valid hostname
+    try:
+        host_ip = socket.gethostbyname(hostname)
+        scan_ports(host_ip, protocol, int(portlow), int(porthigh))
+    except socket.gaierror:
+        print('host {} not exist'.format(hostname))
+
+    
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
