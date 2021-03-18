@@ -13,12 +13,7 @@
 # moving on to the next port to scan
 #############################################
 import argparse
-import sys 
 import socket 
-from contextlib import closing
-import errno
-import select
-import struct
 
 # attempt to get port name
 def get_port_name(port, protocol):
@@ -42,7 +37,6 @@ def scan_ports(host_ip, protocol,port_low, port_high):
         
 # perform tcp scan for each port
 def tcp_scan(ip, port):
-    
     tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     tcp.settimeout(1)
     try:
@@ -53,67 +47,46 @@ def tcp_scan(ip, port):
         pass
     finally: # close port when done
         tcp.close()
-    
-    '''
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
-    # time out set to 1 second
-    socket.setdefaulttimeout(1) 
-    service_name = 'svc name unavail'
-    try:
-        #check if the service available 
-        service_name = socket.getservbyport(port, 'tcp')
-    except:
-        pass
-    # check for connection open or  not
-    result = s.connect_ex((ip,port)) 
-    if result == 0: 
-        print("Port {} open: {}".format(port, service_name)) 
-    else:
-        print("Port {} closed: {}".format(port, service_name)) 
-    s.close() 
-    '''
 
-    
 
-# perform udp scan
+# perform udp scan for each port
 def udp_scan(ip, port):
-    service_name = 'svc name unavail'
-    udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    udp.settimeout(1)
     
-
-    portOpen = False
-    have_name = False
-    bytes_to_send = str.encode('hello')
+    retries = 5 # UDP loss may occur so we send mutiple times
     port_open = False
+    port_filtered_open = False
  
-    for _ in range(5): # UDP packet loss may occur so we send twice to make sure
+    for _ in range(retries): 
+        udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        # adjust timeout will detect more or less false positive
+        # 1 second works best for me
+        udp.settimeout(1)
         try:
-            udp.connect( (ip, port)) 
+            # if receive packet, the port is open
+            udp.connect((ip, port)) 
             udp.send(bytes(0))
             udp.recv(1024)
-            print("Port {} open: {}".format(port, service_name)) 
+            port_open = True 
             break
 
         except socket.timeout:
-            try:
-                service_name = socket.getservbyport(port, 'udp')
-            except:
-                pass
-            print("Port {} open filtered: {}".format(port, service_name)) 
+            # if socket timeout, the port maybe open 
+            # since server does not send anything back  
+            port_filtered_open = True
             break
 
         except socket.error:
-            # print("Port {} closed: {}".format(port, service_name)) 
-            continue
+            # if socket error, port is closed
+            continue 
         finally:   
             udp.close()
-    if not port_open:
-            try:
-                service_name = socket.getservbyport(port, 'udp')
-            except:
-                pass
-            print("Port {} closed: {}".format(port, service_name)) 
+    service_name = get_port_name(port, 'udp')
+    if  port_open:
+        print("Port {} open: {}".format(port, service_name)) 
+    elif port_filtered_open and service_name != 'svc name unavail':
+        print("Port {} open: {}".format(port, service_name)) 
+    elif not port_open and service_name != 'svc name unavail':
+        print("Port {} closed: {}".format(port, service_name)) 
 
 
     udp.close() 
