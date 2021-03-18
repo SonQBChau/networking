@@ -32,6 +32,7 @@ def scan_ports(host_ip, protocol,port_low, port_high):
         for port in range(port_low, port_high+1):
             tcp_scan(host_ip, port)
     elif protocol.lower() == 'udp':
+        print('udp scan is slow, please wait....')
         for port in range(port_low, port_high+1):
             udp_scan(host_ip, port)
     else:
@@ -44,7 +45,7 @@ def tcp_scan(ip, port):
     tcp.settimeout(1)
     try:
         service_name = get_port_name(port, 'tcp')
-        if not tcp.connect((ip, port)): # port is open
+        if not tcp.connect((ip, port)): # only print open port like sample
             print("Port {} open: {}".format(port, service_name)) 
     except Exception as e: # ignore refused connection
         pass
@@ -55,7 +56,6 @@ def tcp_scan(ip, port):
 # perform udp scan for each port
 # return 
 def udp_scan(ip, port):
-    
     retries = 3 # UDP loss may occur so we send mutiple times
     port_open = False
     port_filter_open = False
@@ -72,17 +72,12 @@ def udp_scan(ip, port):
             udp.recv(1024)
             port_open = True 
             break
-        # except Exception as e:
-        #     print(e)
-        # finally:   
-        #     udp.close()
-        #     time.sleep(0.1)
         
         except socket.timeout:
             # if socket timeout, the port maybe open 
             # since server does not send anything back  
-
-            # question is it open or close???
+            # after playing with timeout and sleep, I found that
+            # second packet most likely indicate the port open or close
             if i == 1:
                 port_filter_open = True
             continue
@@ -98,10 +93,8 @@ def udp_scan(ip, port):
         
        
     service_name = get_port_name(port, 'udp')
-    # print(port)
-    # print('===========')
-    # time.sleep(1)
-    
+
+    # print out open and closed ports and filtered out unwanted outputs
     if  port_open:
         print("Port {} open: {}".format(port, service_name)) 
     elif port_filter_open and service_name != 'svc name unavail':
