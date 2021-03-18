@@ -16,8 +16,7 @@ import argparse
 import socket 
 import time
 
-# get port name from the built-in list
-# return 'svc name unavail' otherwise
+# get port name or return 'svc name unavail' otherwise
 def get_port_name(port, protocol):
     service_name = 'svc name unavail'
     try: # attempt to get port name
@@ -38,8 +37,7 @@ def scan_ports(host_ip, protocol,port_low, port_high):
     else:
         print('invalid protocol: {}. Specify "tcp" or "udp"'.format(protocol))
         
-# perform tcp scan for each port
-# return only open port
+# perform tcp scan, print out only open port
 def tcp_scan(ip, port):
     tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     tcp.settimeout(1)
@@ -47,14 +45,13 @@ def tcp_scan(ip, port):
         service_name = get_port_name(port, 'tcp')
         if not tcp.connect((ip, port)): # only print open port like sample
             print("Port {} open: {}".format(port, service_name)) 
-    except Exception as e: # ignore refused connection
+    except: # ignore refused connection
         pass
     finally: # close port when done
         tcp.close()
 
 
-# perform udp scan for each port
-# return 
+# perform udp scan, print out open and closed port
 def udp_scan(ip, port):
     retries = 3 # UDP loss may occur so we send mutiple times
     port_open = False
@@ -63,37 +60,27 @@ def udp_scan(ip, port):
     for i in range(retries): 
         udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         # adjust timeout will detect more or less false positive
-        # 1 second works best for me
-        udp.settimeout(1)
+        udp.settimeout(1) # 1 second works best for me
         try:
-            # if receive packet, the port is open
             udp.connect((ip, port)) 
             udp.send(bytes(0))
-            udp.recv(1024)
+            udp.recv(1024) # if packet receive, port is open
             port_open = True 
             break
-        
         except socket.timeout:
             # if socket timeout, the port maybe open 
-            # since server does not send anything back  
             # after playing with timeout and sleep, I found that
             # second packet most likely indicate the port open or close
             if i == 1:
                 port_filter_open = True
             continue
-
-        except socket.error:
-            # if socket error, port is closed
-            if i == 1:
-                port_open = False
+        except socket.error: # ignore refused connection
             continue 
         finally:   
             udp.close()
             time.sleep(0.1)
         
-       
     service_name = get_port_name(port, 'udp')
-
     # print out open and closed ports and filtered out unwanted outputs
     if  port_open:
         print("Port {} open: {}".format(port, service_name)) 
@@ -105,18 +92,12 @@ def udp_scan(ip, port):
         print("Port {} closed: {}".format(port, service_name)) 
         
 
-
-    # udp.close() 
-
-
-    
-
 def main(hostname, protocol, portlow, porthigh):
     print ("scanning host={}, protocol={}, ports: {} -> {}".
     format(hostname, protocol, portlow, porthigh))
-    # check valid hostname
+    
     try:
-        host_ip = socket.gethostbyname(hostname)
+        host_ip = socket.gethostbyname(hostname) # check valid hostname
         scan_ports(host_ip, protocol, int(portlow), int(porthigh))
     except socket.gaierror:
         print('host {} not exist'.format(hostname))
