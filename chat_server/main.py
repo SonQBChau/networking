@@ -22,10 +22,7 @@ def call_list (connected_list, connection):
     combined_str = str1 + str2 + str3 + str2
     broadcast_to_one(combined_str, connection)
 
-#Function to send message to all connected clients
-def broadcast_to_all ( message, connected_list):
-	for socket in connected_list:
-		socket.send(message)	
+
 # function to search for a connection in "database", return None if not found
 def search_by_connection(connection, database):
     for c in database:
@@ -38,6 +35,15 @@ def search_by_name(name, database):
         if c['name'] == name:
             return c
     return None
+
+#Function to send message to all connected clients
+def broadcast_to_all ( mesg, from_client, database):
+    c = search_by_connection(from_client, database)
+    message = ('FROM {}: {}'.format(c['name'], mesg))
+    for client in database:
+        conn = client['connection']
+        if conn != from_client:
+            conn.send(message.encode())	
 
 def broadcast_to_one(message, connection):
     connection.send(message.encode())
@@ -79,7 +85,7 @@ def quit_server(connected_list,client_number, connection):
 def threaded_client(connection, database, client_number):
     print('Client {}: Connection Accepted'.format(client_number))
     print('Client {}: Connection Handler Assigned'.format(client_number))
-    print(connection)
+   
     while True:
         # receive commands from user
         data = connection.recv(2048)
@@ -112,7 +118,7 @@ def threaded_client(connection, database, client_number):
                     send_mesg(mesg, from_client, to_client, database)
                 elif(command == 'BCST'):
                     message = extra_data
-                    broadcast_to_all(message, database)
+                    broadcast_to_all(message, connection, database)
              
                 else:
                     print('Unknown Message')
