@@ -27,8 +27,8 @@ def join_server (database, client_name, client_number, connection):
         if( search_by_connection(connection, database) == None):
             # check if username already exist
             if( search_by_name(client_name, database) == None):
-                print('Client {}: JOIN {}'.format(client_number, client_name))
-                message = ('Request Accepted \n')
+                print('Client ({}): JOIN {}'.format(client_number, client_name))
+                message = ('JOIN {} Request Accepted \n'.format(client_name))
                 broadcast_to_one(message, connection)
                 database.append(client_obj)
                 result = True
@@ -42,8 +42,8 @@ def join_server (database, client_name, client_number, connection):
             result = True
 
     else:
-        print('Client {}: Database Full. Disconnecting User.\n'.format(client_number))
-        message = ('Too Many Users. Disconnecting User.')
+        print('Client ({}): Database Full. Disconnecting User.'.format(client_number))
+        message = ('Too Many Users. Disconnecting User.\n')
         broadcast_to_one(message, connection)
     
     return result
@@ -56,22 +56,22 @@ def call_list (connected_list, connection):
     str2 = ('-' * 20 + '\n')
     str3 = ''
     for c in connected_list:
-        str3 += ('{} \t\t {} \n'.format(c['name'], c['number']))
+        str3 += ('{} \t {} \n'.format(c['name'], c['number']))
     combined_str = str1 + str2 + str3 + str2 # pretty print
     broadcast_to_one(combined_str, connection)
 
 ############################################################
 # SEND AN INDIVIDUAL MESSAGE TO ANOTHER REGISTERED CLIENT
 ############################################################
-def send_mesg(mesg, from_client, to_client, database):
+def send_mesg(mesg, from_client, to_client, database, client_name):
     receiver = search_by_name(to_client, database)
     if(receiver != None):
-        message = ('FROM {}: {}'.format(from_client, mesg))
+        message = ('FROM {}: {}\n'.format(client_name, mesg))
         broadcast_to_one(message, receiver['connection'])
     else:
         print("Unable to Locate Recipient {} in Database. " 
         "Discarding MESG.".format(to_client))
-        message = ('Unknown Recipient {}. MESG Discarded.\n'.format(to_client))
+        message = ('Unknown Recipient ({}). MESG Discarded.\n'.format(to_client))
         broadcast_to_one(message, from_client)
 
 ######################################################
@@ -79,7 +79,7 @@ def send_mesg(mesg, from_client, to_client, database):
 ######################################################
 def broadcast_to_all ( mesg, from_client, database):
     c = search_by_connection(from_client, database)
-    message = ('FROM {}: {}'.format(c['name'], mesg))
+    message = ('FROM {}: {}\n'.format(c['name'], mesg))
     for client in database:
         conn = client['connection']
         if conn != from_client:
@@ -93,9 +93,9 @@ def quit_server(connected_list,client_number, connection):
     c = search_by_connection(connection, connected_list)
     if( c != None):
         connected_list.remove(c)
-        print('Client {}: Disconneting User'.format(client_number))
+        print('Client ({}): Disconneting User'.format(client_number))
     else:
-        print('Unable to Locate Client {} in Database.'
+        print('Unable to Locate Client ({}) in Database.'
         ' Disconnecting User. \n'
         .format(client_number))
 
@@ -120,8 +120,8 @@ def broadcast_to_one(message, connection):
 # MAKE NEW CONNECTION IN SEPARATE THREAD
 def threaded_client(connection, database, client_number):
     if(len(database) < LIMIT):
-        print('Client {}: Connection Accepted'.format(client_number))
-        print('Client {}: Connection Handler Assigned'.format(client_number))
+        print('Client ({}): Connection Accepted'.format(client_number))
+        print('Client ({}): Connection Handler Assigned'.format(client_number))
         while True:
             # receive commands from user
             data = connection.recv(2048)
@@ -130,33 +130,36 @@ def threaded_client(connection, database, client_number):
             command = string_data[0:4].upper()
             extra_data = string_data[5:-1]
 
+            # JOIN and QUIT command do not need to register
             if(command == 'JOIN'):
                 client_name = extra_data.strip()
                 result = join_server(database, client_name, client_number, connection)
                 if(result == False):
                     break
             elif(command== 'QUIT'):
-                    print('Client {}: QUIT'.format(client_number))
+                    print('Client ({}): QUIT'.format(client_number))
                     quit_server(database,client_number, connection)
                     break # this will close connection
             else:
                 # check if user registered before perform any commands
                 if(search_by_connection(connection, database) != None):
                     if(command == 'LIST'):
-                        print('Client {}: LIST'.format(client_number))
+                        print('Client ({}): LIST'.format(client_number))
                         call_list(database, connection)
                     elif(command== 'MESG'):
                         from_client = connection
                         to_client, mesg = extra_data.split(" ", 1)
-                        send_mesg(mesg, from_client, to_client, database)
+                        send_mesg(mesg, from_client, to_client, database, client_name)
                     elif(command == 'BCST'):
                         message = extra_data
                         broadcast_to_all(message, connection, database)
                     else:
-                        print('Client {}: Unrecognizable Message.'
+                        print('Client ({}): Unrecognizable Message.'
                         ' Discarding UNKNOWN Message.'.format(client_number))
+                        message = ('Unknown Message. Discarding UNKNOWN Message.\n')
+                        broadcast_to_one(message, connection)
                 else:
-                    print("Unable to Locate Client {} in database."
+                    print("Unable to Locate Client ({}) in database."
                     " Discarding {}.".format(client_number, command))
                     message = ('Unregistered User. Use "JOIN <username>" to Register.\n')
                     broadcast_to_one(message, connection)
