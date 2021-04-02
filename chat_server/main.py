@@ -28,6 +28,8 @@ def join_server (database, client_name, client_number, connection):
             # check if username already exist
             if( search_by_name(client_name, database) == None):
                 print('Client {}: JOIN {}'.format(client_number, client_name))
+                message = ('Request Accepted \n')
+                broadcast_to_one(message, connection)
                 database.append(client_obj)
                 result = True
             else:
@@ -64,12 +66,12 @@ def call_list (connected_list, connection):
 def send_mesg(mesg, from_client, to_client, database):
     receiver = search_by_name(to_client, database)
     if(receiver != None):
-        message = ('FROM {}: {}'.format(receiver['name'], mesg))
+        message = ('FROM {}: {}'.format(from_client, mesg))
         broadcast_to_one(message, receiver['connection'])
     else:
         print("Unable to Locate Recipient {} in Database. " 
         "Discarding MESG.".format(to_client))
-        message = ('Unknown Recipient {}. MESG Discarded.'.format(to_client))
+        message = ('Unknown Recipient {}. MESG Discarded.\n'.format(to_client))
         broadcast_to_one(message, from_client)
 
 ######################################################
@@ -91,8 +93,11 @@ def quit_server(connected_list,client_number, connection):
     c = search_by_connection(connection, connected_list)
     if( c != None):
         connected_list.remove(c)
+        print('Client {}: Disconneting User'.format(client_number))
     else:
-        print('Unable to Locate Client {} in Database.'.format(client_number))
+        print('Unable to Locate Client {} in Database.'
+        ' Disconnecting User. \n'
+        .format(client_number))
 
 # SEARCH A CLIENT'S SOCKET FILE IN THE DATA BASE
 def search_by_connection(connection, database):
@@ -133,7 +138,6 @@ def threaded_client(connection, database, client_number):
             elif(command== 'QUIT'):
                     print('Client {}: QUIT'.format(client_number))
                     quit_server(database,client_number, connection)
-                    print('Client {}: Disconneting User'.format(client_number))
                     break # this will close connection
             else:
                 # check if user registered before perform any commands
@@ -153,7 +157,9 @@ def threaded_client(connection, database, client_number):
                         ' Discarding UNKNOWN Message.'.format(client_number))
                 else:
                     print("Unable to Locate Client {} in database."
-                    " Discarding {}".format(client_number, command))
+                    " Discarding {}.".format(client_number, command))
+                    message = ('Unregistered User. Use "JOIN <username>" to Register.\n')
+                    broadcast_to_one(message, connection)
     else:
         print('Error: Too Many Clients Connected')
        
