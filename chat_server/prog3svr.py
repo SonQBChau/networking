@@ -24,7 +24,8 @@ def join_server (database, client_name, client_number, connection):
             "connection":connection}
     if (len(database) < LIMIT  ):
         # check if socket client already exist
-        if( search_by_connection(connection, database) == None):
+        registed_client = search_by_connection(connection, database)
+        if( registed_client == None):
             # check if username already exist
             if( search_by_name(client_name, database) == None):
                 print('Client ({}): JOIN {}'.format(client_number, client_name))
@@ -33,11 +34,16 @@ def join_server (database, client_name, client_number, connection):
                 database.append(client_obj)
                 result = True
             else:
-                message = ('This username already taken. \n')
+                message = ('This username ({}) already taken. Discarding JOIN.\n'
+                .format(client_name))
                 broadcast_to_one(message, connection)
                 result = True
         else:
-            message = ('Already joined. Quit server to choose another name. \n')
+            print('Client ({}): User Already Registered.'
+            ' Discarding JOIN.'.format(client_number))
+            message = ('User Already Registered:'
+            ' Username ({}), FD ({}) \n'
+            .format(registed_client['name'], registed_client['number']))
             broadcast_to_one(message, connection)
             result = True
 
