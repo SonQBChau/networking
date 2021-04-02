@@ -1,7 +1,7 @@
 #############################################
 # Name: Son Chau (sonchau@my.unt.edu)
 # Course: CSE 5580 Networking Spring 2021
-# Date: 03/30/2021
+# Date: 04/01/2021
 # Description: Socket server that serve as a
 # chat room
 #############################################
@@ -11,7 +11,7 @@ from _thread import *
 import queue
 import argparse
 
-LIMIT = 1 # The server will support up to 10 “registered” client connections
+LIMIT = 10 # The server will support up to 10 “registered” client connections
 
 #############################################
 # REGISTER THE CLIENT AND ALLOW RECEIVE 
@@ -24,11 +24,19 @@ def join_server (database, client_name, client_number, connection):
             "connection":connection}
     if (len(database) < LIMIT  ):
         if( search_by_connection(connection, database) == None):
-            print('Client {}: JOIN {}'.format(client_number, client_name))
-            database.append(client_obj)
-            result = True
+            if( search_by_name(client_name, database) == None):
+                print('Client {}: JOIN {}'.format(client_number, client_name))
+                database.append(client_obj)
+                result = True
+            else:
+                message = ('This username already taken. \n')
+                broadcast_to_one(message, connection)
+                result = True
         else:
-            print('Already added')
+            message = ('Already joined. Quit server to choose another name. \n')
+            broadcast_to_one(message, connection)
+            result = True
+
     else:
         print('Client {}: Database Full. Disconnecting User.\n'.format(client_number))
         message = ('Too Many Users. Disconnecting User.')
@@ -49,17 +57,6 @@ def call_list (connected_list, connection):
     combined_str = str1 + str2 + str3 + str2
     broadcast_to_one(combined_str, connection)
 
-######################################################
-# BROADCAST A MESSAGE TO ALL OTHER REGISTERED CLIENTS
-######################################################
-def broadcast_to_all ( mesg, from_client, database):
-    c = search_by_connection(from_client, database)
-    message = ('FROM {}: {}'.format(c['name'], mesg))
-    for client in database:
-        conn = client['connection']
-        if conn != from_client:
-            conn.send(message.encode())	
-
 ############################################################
 # SEND AN INDIVIDUAL MESSAGE TO ANOTHER REGISTERED CLIENT
 ############################################################
@@ -70,10 +67,21 @@ def send_mesg(mesg, from_client, to_client, database):
         message = ('FROM {}: {}'.format(receiver['name'], mesg))
         broadcast_to_one(message, receiver['connection'])
     else:
-        print("Unable to Locate Recipient {} in Database." 
+        print("Unable to Locate Recipient {} in Database. " 
         "Discarding MESG.".format(to_client))
         message = ('Unknown Recipient {}. MESG Discarded.'.format(to_client))
         broadcast_to_one(message, from_client)
+
+######################################################
+# BROADCAST A MESSAGE TO ALL OTHER REGISTERED CLIENTS
+######################################################
+def broadcast_to_all ( mesg, from_client, database):
+    c = search_by_connection(from_client, database)
+    message = ('FROM {}: {}'.format(c['name'], mesg))
+    for client in database:
+        conn = client['connection']
+        if conn != from_client:
+            conn.send(message.encode())	
 
 #########################################
 # DISCONNECT THE CLIENT FROM THE SERVICE
