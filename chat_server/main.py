@@ -23,7 +23,9 @@ def join_server (database, client_name, client_number, connection):
             "number":client_number, 
             "connection":connection}
     if (len(database) < LIMIT  ):
+        # check if socket client already exist
         if( search_by_connection(connection, database) == None):
+            # check if username already exist
             if( search_by_name(client_name, database) == None):
                 print('Client {}: JOIN {}'.format(client_number, client_name))
                 database.append(client_obj)
@@ -53,15 +55,13 @@ def call_list (connected_list, connection):
     str3 = ''
     for c in connected_list:
         str3 += ('{} \t\t {} \n'.format(c['name'], c['number']))
-
-    combined_str = str1 + str2 + str3 + str2
+    combined_str = str1 + str2 + str3 + str2 # pretty print
     broadcast_to_one(combined_str, connection)
 
 ############################################################
 # SEND AN INDIVIDUAL MESSAGE TO ANOTHER REGISTERED CLIENT
 ############################################################
 def send_mesg(mesg, from_client, to_client, database):
-    
     receiver = search_by_name(to_client, database)
     if(receiver != None):
         message = ('FROM {}: {}'.format(receiver['name'], mesg))
@@ -90,7 +90,7 @@ def broadcast_to_all ( mesg, from_client, database):
 def quit_server(connected_list,client_number, connection):
     c = search_by_connection(connection, connected_list)
     if( c != None):
-            connected_list.remove(c)
+        connected_list.remove(c)
     else:
         print('Unable to Locate Client {} in Database.'.format(client_number))
 
@@ -120,7 +120,7 @@ def threaded_client(connection, database, client_number):
         while True:
             # receive commands from user
             data = connection.recv(2048)
-            string_data = data.decode('utf-8')
+            string_data = data.decode('ascii')
             # the first 4 chars is the command
             command = string_data[0:4].upper()
             extra_data = string_data[5:-1]
@@ -134,9 +134,9 @@ def threaded_client(connection, database, client_number):
                     print('Client {}: QUIT'.format(client_number))
                     quit_server(database,client_number, connection)
                     print('Client {}: Disconneting User'.format(client_number))
-                    break
+                    break # this will close connection
             else:
-                # check if user register before perform any commands
+                # check if user registered before perform any commands
                 if(search_by_connection(connection, database) != None):
                     if(command == 'LIST'):
                         print('Client {}: LIST'.format(client_number))
@@ -148,16 +148,15 @@ def threaded_client(connection, database, client_number):
                     elif(command == 'BCST'):
                         message = extra_data
                         broadcast_to_all(message, connection, database)
-                
                     else:
-                        print('Unknown Message')
+                        print('Client {}: Unrecognizable Message.'
+                        ' Discarding UNKNOWN Message.'.format(client_number))
                 else:
                     print("Unable to Locate Client {} in database."
-                    "Discarding {}".format(client_number, command))
+                    " Discarding {}".format(client_number, command))
     else:
         print('Error: Too Many Clients Connected')
        
-
     connection.close()
 
 def main(port_number):
