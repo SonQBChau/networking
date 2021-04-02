@@ -57,11 +57,11 @@ def join_server (database, client_name, client_number, connection):
 ######################################################
 # LIST OF CLIENT CURRENTLY SUBSCRIBED TO THE SERVICE
 ######################################################
-def call_list (connected_list, connection):
+def call_list (database, connection):
     str1 = ('{:15s} {:5s}\n'.format('USERNAME', 'FD'))
     str2 = ('-' * 25 + '\n')
     str3 = ''
-    for c in connected_list:
+    for c in database:
         str3 += ('{:15s} {:<5d}\n'.format(c['name'], c['number']))
     combined_str = str1 + str2 + str3 + str2 # pretty print
     broadcast_to_one(combined_str, connection)
@@ -95,10 +95,10 @@ def broadcast_to_all ( mesg, from_client, database):
 # DISCONNECT THE CLIENT FROM THE SERVICE
 # REMOVE THE DATABASE ENTRY
 #########################################
-def quit_server(connected_list,client_number, connection):
-    c = search_by_connection(connection, connected_list)
+def quit_server(database,client_number, connection):
+    c = search_by_connection(connection, database)
     if( c != None):
-        connected_list.remove(c)
+        database.remove(c)
         print('Client ({}): Disconneting User'.format(client_number))
     else:
         print('Unable to Locate Client ({}) in Database.'
@@ -175,7 +175,7 @@ def threaded_client(connection, database, client_number):
     connection.close()
 
 def main(port_number):
-    connected_clients = []
+    database = []
     client_count = 0
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     host = ''
@@ -192,7 +192,7 @@ def main(port_number):
         client, address = server_socket.accept()
         client_count += 1
         # When a client connects, a new thread will be spawned
-        start_new_thread(threaded_client, (client,connected_clients,client_count, ))
+        start_new_thread(threaded_client, (client,database,client_count, ))
         
     ServerSocket.close()
   
