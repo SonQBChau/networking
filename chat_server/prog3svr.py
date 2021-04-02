@@ -58,11 +58,11 @@ def join_server (database, client_name, client_number, connection):
 # LIST OF CLIENT CURRENTLY SUBSCRIBED TO THE SERVICE
 ######################################################
 def call_list (connected_list, connection):
-    str1 = ('USERNAME \t FD\n')
-    str2 = ('-' * 20 + '\n')
+    str1 = ('{:15s} {:5s}\n'.format('USERNAME', 'FD'))
+    str2 = ('-' * 25 + '\n')
     str3 = ''
     for c in connected_list:
-        str3 += ('{} \t {} \n'.format(c['name'], c['number']))
+        str3 += ('{:15s} {:<5d}\n'.format(c['name'], c['number']))
     combined_str = str1 + str2 + str3 + str2 # pretty print
     broadcast_to_one(combined_str, connection)
 
