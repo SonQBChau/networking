@@ -11,10 +11,37 @@ from _thread import *
 import queue
 import argparse
 
-# function to return the list of current connections
+LIMIT = 1 # The server will support up to 10 “registered” client connections
+
+#############################################
+# REGISTER THE CLIENT AND ALLOW RECEIVE 
+# ANY “SERVICES” PROVIDED BY THE SERVER.
+#############################################
+def join_server (database, client_name, client_number, connection):
+    result = False
+    client_obj = {"name": client_name,
+            "number":client_number, 
+            "connection":connection}
+    if (len(database) < LIMIT  ):
+        if( search_by_connection(connection, database) == None):
+            print('Client {}: JOIN {}'.format(client_number, client_name))
+            database.append(client_obj)
+            result = True
+        else:
+            print('Already added')
+    else:
+        print('Client {}: Database Full. Disconnecting User.\n'.format(client_number))
+        message = ('Too Many Users. Disconnecting User.')
+        broadcast_to_one(message, connection)
+    
+    return result
+
+######################################################
+# LIST OF CLIENT CURRENTLY SUBSCRIBED TO THE SERVICE
+######################################################
 def call_list (connected_list, connection):
     str1 = ('USERNAME \t FD\n')
-    str2 = ('-' * 20+'\n')
+    str2 = ('-' * 20 + '\n')
     str3 = ''
     for c in connected_list:
         str3 += ('{} \t\t {} \n'.format(c['name'], c['number']))
@@ -22,21 +49,9 @@ def call_list (connected_list, connection):
     combined_str = str1 + str2 + str3 + str2
     broadcast_to_one(combined_str, connection)
 
-
-# function to search for a connection in "database", return None if not found
-def search_by_connection(connection, database):
-    for c in database:
-        if c['connection'] == connection:
-            return c
-    return None
-
-def search_by_name(name, database):
-    for c in database:
-        if c['name'] == name:
-            return c
-    return None
-
-#Function to send message to all connected clients
+######################################################
+# BROADCAST A MESSAGE TO ALL OTHER REGISTERED CLIENTS
+######################################################
 def broadcast_to_all ( mesg, from_client, database):
     c = search_by_connection(from_client, database)
     message = ('FROM {}: {}'.format(c['name'], mesg))
@@ -45,9 +60,9 @@ def broadcast_to_all ( mesg, from_client, database):
         if conn != from_client:
             conn.send(message.encode())	
 
-def broadcast_to_one(message, connection):
-    connection.send(message.encode())
-
+############################################################
+# SEND AN INDIVIDUAL MESSAGE TO ANOTHER REGISTERED CLIENT
+############################################################
 def send_mesg(mesg, from_client, to_client, database):
     
     receiver = search_by_name(to_client, database)
@@ -60,19 +75,10 @@ def send_mesg(mesg, from_client, to_client, database):
         message = ('Unknown Recipient {}. MESG Discarded.'.format(to_client))
         broadcast_to_one(message, from_client)
 
-
-def join_server (connected_list, client_name,client_number, connection):
-    client_obj = {"name": client_name,
-            "number":client_number, 
-            "connection":connection}
-    if (len(connected_list) <= 10  ):
-        if( search_by_connection(connection, connected_list) == None):
-            connected_list.append(client_obj)
-        else:
-            print('Already added')
-    else:
-        print('Too Many Users')
-
+#########################################
+# DISCONNECT THE CLIENT FROM THE SERVICE
+# REMOVE THE DATABASE ENTRY
+#########################################
 def quit_server(connected_list,client_number, connection):
     c = search_by_connection(connection, connected_list)
     if( c != None):
@@ -80,52 +86,68 @@ def quit_server(connected_list,client_number, connection):
     else:
         print('Unable to Locate Client {} in Database.'.format(client_number))
 
+# SEARCH A CLIENT'S SOCKET FILE IN THE DATA BASE
+def search_by_connection(connection, database):
+    for c in database:
+        if c['connection'] == connection:
+            return c
+    return None
 
-# make connection in separate thread
+# SEARCH A CLIENT'S NAME IN THE DATA BASE
+def search_by_name(name, database):
+    for c in database:
+        if c['name'] == name:
+            return c
+    return None
+
+# BROADCAST A MESSAGE TO ONE
+def broadcast_to_one(message, connection):
+    connection.send(message.encode())
+
+# MAKE NEW CONNECTION IN SEPARATE THREAD
 def threaded_client(connection, database, client_number):
-    print('Client {}: Connection Accepted'.format(client_number))
-    print('Client {}: Connection Handler Assigned'.format(client_number))
-   
-    while True:
-        # receive commands from user
-        data = connection.recv(2048)
-        string_data = data.decode('utf-8')
-        # the first 4 chars is the command
-        command = string_data[0:4].upper()
-        extra_data = string_data[5:-1]
+    if(len(database) < LIMIT):
+        print('Client {}: Connection Accepted'.format(client_number))
+        print('Client {}: Connection Handler Assigned'.format(client_number))
+        while True:
+            # receive commands from user
+            data = connection.recv(2048)
+            string_data = data.decode('utf-8')
+            # the first 4 chars is the command
+            command = string_data[0:4].upper()
+            extra_data = string_data[5:-1]
 
-        if(command == 'JOIN'):
+            if(command == 'JOIN'):
                 client_name = extra_data.strip()
-                if(client_name != ''):
-                    print('Client {}: JOIN {}'.format(client_number, extra_data))
-                    join_server(database, client_name, client_number, connection)
-                else:
-                    print('Missing name. Discard JOIN')
-        elif(command== 'QUIT'):
-                print('Client {}: QUIT'.format(client_number))
-                quit_server(database,client_number, connection)
-                print('Client {}: Disconneting User'.format(client_number))
-                break
-        else:
-            # check if user register before perform any commands
-            if(search_by_connection(connection, database) != None):
-                if(command == 'LIST'):
-                    print('Client {}: LIST'.format(client_number))
-                    call_list(database, connection)
-                elif(command== 'MESG'):
-                    from_client = connection
-                    to_client, mesg = extra_data.split(" ", 1)
-                    send_mesg(mesg, from_client, to_client, database)
-                elif(command == 'BCST'):
-                    message = extra_data
-                    broadcast_to_all(message, connection, database)
-             
-                else:
-                    print('Unknown Message')
+                result = join_server(database, client_name, client_number, connection)
+                if(result == False):
+                    break
+            elif(command== 'QUIT'):
+                    print('Client {}: QUIT'.format(client_number))
+                    quit_server(database,client_number, connection)
+                    print('Client {}: Disconneting User'.format(client_number))
+                    break
             else:
-                print("Unable to Locate Client {} in database."
-                "Discarding {}".format(client_number, command))
- 
+                # check if user register before perform any commands
+                if(search_by_connection(connection, database) != None):
+                    if(command == 'LIST'):
+                        print('Client {}: LIST'.format(client_number))
+                        call_list(database, connection)
+                    elif(command== 'MESG'):
+                        from_client = connection
+                        to_client, mesg = extra_data.split(" ", 1)
+                        send_mesg(mesg, from_client, to_client, database)
+                    elif(command == 'BCST'):
+                        message = extra_data
+                        broadcast_to_all(message, connection, database)
+                
+                    else:
+                        print('Unknown Message')
+                else:
+                    print("Unable to Locate Client {} in database."
+                    "Discarding {}".format(client_number, command))
+    else:
+        print('Error: Too Many Clients Connected')
        
 
     connection.close()
@@ -142,11 +164,12 @@ def main(port_number):
         print(str(e))
 
     print('Waiting for Incoming Connections...')
-    server_socket.listen(10) # only accept maximum 10 connections
+    server_socket.listen(10) 
 
     while True:
         client, address = server_socket.accept()
         client_count += 1
+        # When a client connects, a new thread will be spawned
         start_new_thread(threaded_client, (client,connected_clients,client_count, ))
         
     ServerSocket.close()
