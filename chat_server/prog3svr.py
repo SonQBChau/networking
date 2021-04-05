@@ -6,9 +6,7 @@
 # chat room
 #############################################
 import socket
-import os
 from _thread import *
-import queue
 import argparse
 
 LIMIT = 10 # The server will support up to 10 “registered” client connections
@@ -17,10 +15,10 @@ LIMIT = 10 # The server will support up to 10 “registered” client connection
 # REGISTER THE CLIENT AND ALLOW RECEIVE 
 # ANY “SERVICES” PROVIDED BY THE SERVER.
 #############################################
-def join_server (database, client_name, client_number, connection):
+def join_server (database, client_name, file_descriptor, connection):
     result = False
     client_obj = {"name": client_name,
-            "number":client_number, 
+            "number":file_descriptor, 
             "connection":connection}
     if (len(database) < LIMIT  ):
         # check if socket client already exist
@@ -28,7 +26,7 @@ def join_server (database, client_name, client_number, connection):
         if( registed_client == None):
             # check if username already exist
             if( search_by_name(client_name, database) == None):
-                print('Client ({}): JOIN {}'.format(client_number, client_name))
+                print('Client ({}): JOIN {}'.format(file_descriptor, client_name))
                 message = ('JOIN {} Request Accepted \n'.format(client_name))
                 broadcast_to_one(message, connection)
                 database.append(client_obj)
@@ -40,7 +38,7 @@ def join_server (database, client_name, client_number, connection):
                 result = True
         else:
             print('Client ({}): User Already Registered.'
-            ' Discarding JOIN.'.format(client_number))
+            ' Discarding JOIN.'.format(file_descriptor))
             message = ('User Already Registered:'
             ' Username ({}), FD ({}) \n'
             .format(registed_client['name'], registed_client['number']))
@@ -48,7 +46,7 @@ def join_server (database, client_name, client_number, connection):
             result = True
 
     else:
-        print('Client ({}): Database Full. Disconnecting User.'.format(client_number))
+        print('Client ({}): Database Full. Disconnecting User.'.format(file_descriptor))
         message = ('Too Many Users. Disconnecting User.\n')
         broadcast_to_one(message, connection)
     
@@ -95,15 +93,15 @@ def broadcast_to_all ( mesg, from_client, database):
 # DISCONNECT THE CLIENT FROM THE SERVICE
 # REMOVE THE DATABASE ENTRY
 #########################################
-def quit_server(database,client_number, connection):
+def quit_server(database,file_descriptor, connection):
     c = search_by_connection(connection, database)
     if( c != None):
         database.remove(c)
-        print('Client ({}): Disconneting User'.format(client_number))
+        print('Client ({}): Disconneting User'.format(file_descriptor))
     else:
         print('Unable to Locate Client ({}) in Database.'
         ' Disconnecting User. \n'
-        .format(client_number))
+        .format(file_descriptor))
 
 # SEARCH A CLIENT'S SOCKET FILE IN THE DATA BASE
 def search_by_connection(connection, database):
@@ -124,10 +122,10 @@ def broadcast_to_one(message, connection):
     connection.send(message.encode())
 
 # MAKE NEW CONNECTION IN SEPARATE THREAD
-def threaded_client(connection, database, client_number):
+def threaded_client(connection, database, file_descriptor):
     if(len(database) < LIMIT):
-        print('Client ({}): Connection Accepted'.format(client_number))
-        print('Client ({}): Connection Handler Assigned'.format(client_number))
+        print('Client ({}): Connection Accepted'.format(file_descriptor))
+        print('Client ({}): Connection Handler Assigned'.format(file_descriptor))
         while True:
             # receive commands from user
             data = connection.recv(2048)
@@ -139,18 +137,18 @@ def threaded_client(connection, database, client_number):
             # JOIN and QUIT command do not need to register
             if(command == 'JOIN'):
                 client_name = extra_data.strip()
-                result = join_server(database, client_name, client_number, connection)
+                result = join_server(database, client_name, file_descriptor, connection)
                 if(result == False):
                     break
             elif(command== 'QUIT'):
-                    print('Client ({}): QUIT'.format(client_number))
-                    quit_server(database,client_number, connection)
+                    print('Client ({}): QUIT'.format(file_descriptor))
+                    quit_server(database,file_descriptor, connection)
                     break # this will close connection
             else:
                 # check if user registered before perform any commands
                 if(search_by_connection(connection, database) != None):
                     if(command == 'LIST'):
-                        print('Client ({}): LIST'.format(client_number))
+                        print('Client ({}): LIST'.format(file_descriptor))
                         call_list(database, connection)
                     elif(command== 'MESG'):
                         from_client = connection
@@ -161,12 +159,12 @@ def threaded_client(connection, database, client_number):
                         broadcast_to_all(message, connection, database)
                     else:
                         print('Client ({}): Unrecognizable Message.'
-                        ' Discarding UNKNOWN Message.'.format(client_number))
+                        ' Discarding UNKNOWN Message.'.format(file_descriptor))
                         message = ('Unknown Message. Discarding UNKNOWN Message.\n')
                         broadcast_to_one(message, connection)
                 else:
                     print("Unable to Locate Client ({}) in database."
-                    " Discarding {}.".format(client_number, command))
+                    " Discarding {}.".format(file_descriptor, command))
                     message = ('Unregistered User. Use "JOIN <username>" to Register.\n')
                     broadcast_to_one(message, connection)
     else:
@@ -176,7 +174,7 @@ def threaded_client(connection, database, client_number):
 
 def main(port_number):
     database = []
-    client_count = 0
+    # client_count = 0
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     host = ''
     port = int(port_number)
@@ -190,9 +188,9 @@ def main(port_number):
 
     while True:
         client, address = server_socket.accept()
-        client_count += 1
+        file_descriptor = client.fileno()
         # When a client connects, a new thread will be spawned
-        start_new_thread(threaded_client, (client,database,client_count, ))
+        start_new_thread(threaded_client, (client,database, file_descriptor, ))
         
     ServerSocket.close()
   
