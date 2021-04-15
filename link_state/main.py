@@ -9,34 +9,7 @@
 # path taken for each node, when given a source node.
 #############################################
 import sys
-
-
-def main():
-    value = int(input("Enter the number of routers: "))
-    value = input("Enter filename with cost matrix values: ")
-    value = input("Enter character representation of first node: ")
-    value = input("Enter the source router: ")
-    print(f'You entered {value}')
-
-    # Driver program
-    g = Graph(9)
-    g.graph = [[0, 4, 0, 0, 0, 0, 0, 8, 0],
-               [4, 0, 8, 0, 0, 0, 0, 11, 0],
-               [0, 8, 0, 7, 0, 4, 0, 0, 2],
-               [0, 0, 7, 0, 9, 14, 0, 0, 0],
-               [0, 0, 0, 9, 0, 10, 0, 0, 0],
-               [0, 0, 4, 14, 10, 0, 2, 0, 0],
-               [0, 0, 0, 0, 0, 2, 0, 1, 6],
-               [8, 11, 0, 0, 0, 0, 1, 0, 7],
-               [0, 0, 2, 0, 0, 0, 6, 7, 0]
-               ]
-
-    g.dijkstra(0)
-
-
-if __name__ == "__main__":
-    main()
-
+from pathlib import Path
 
 class Graph():
 
@@ -54,7 +27,6 @@ class Graph():
     # minimum distance value, from the set of vertices
     # not yet included in shortest path tree
     def minDistance(self, dist, sptSet):
-
         # Initilaize minimum distance for next node
         min = sys.maxsize
 
@@ -64,7 +36,6 @@ class Graph():
             if dist[v] < min and sptSet[v] == False:
                 min = dist[v]
                 min_index = v
-
         return min_index
 
     # Funtion that implements Dijkstra's single source
@@ -75,6 +46,7 @@ class Graph():
         dist = [sys.maxsize] * self.V
         dist[src] = 0
         sptSet = [False] * self.V
+        path_taken = [''] * self.V
 
         for cout in range(self.V):
 
@@ -98,5 +70,39 @@ class Graph():
                     dist[v] > dist[u] + self.graph[u][v]
                     ):
                     dist[v] = dist[u] + self.graph[u][v]
-
+                    path_taken[v] += str(u)
+            print('======')
+            print(dist)
+            print(path_taken)
         self.printSolution(dist)
+
+
+def main():
+    # no_of_router = int(input("Enter the number of routers: "))
+    # matrix_name = input("Enter filename with cost matrix values: ")
+    # first_node_char = input("Enter character representation of first node: ")
+    # source_router = input("Enter the source router: ")
+    # print(f'You entered {value}')
+
+    array2D = []
+
+    script_location = Path(__file__).absolute().parent
+    file_location = script_location / 'text.txt'
+    f = open(file_location, "r")
+    for line in f.readlines():
+            # array2D.append(line.split(' '))
+            array2D.append([int(d) for d in line.split(' ')])
+    print(array2D)
+    f.close()
+
+    # Driver program
+    g = Graph(6)
+    g.graph = array2D
+
+    g.dijkstra(0)
+
+
+if __name__ == "__main__":
+    main()
+
+
