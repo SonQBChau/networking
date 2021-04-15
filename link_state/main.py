@@ -38,13 +38,28 @@ class Graph:
     # using parent array
     def printPath(self, parent, j):
         src = ord('u')
+        node = chr(src+j)
         #Base Case : If j is source
         if parent[j] == -1 : 
-            print (chr(src+j), end=', '),
+            print (node, end=', '),
             return
         self.printPath(parent , parent[j])
-        print (chr(src+j), end=', '),
-          
+        print (node, end=', '),
+
+      # Function to print shortest path
+    # from source to j
+    # using parent array 
+    def getPath(self, parent, j, result=''):
+        src = ord('u')
+        node = chr(src+j)
+        result += node
+        #Base Case : If j is source
+        if parent[j] == -1 : 
+            # print (chr(src+j), end=', '),
+            # return
+            return result
+        return self.getPath(parent, parent[j], result=result)
+ 
   
     # A utility function to print
     # the constructed distance
@@ -54,8 +69,11 @@ class Graph:
         src = ord('u')
         print("Vertex \t\tDistance from Source\tPath")
         for i in range(1, len(dist)):
-            print("\n%s ==> %s \t\t%d \t\t\t\t\t" % (chr(src), chr(src+i), dist[i])),
-            self.printPath(parent,i)
+            print('{} ==> {}:'.format(chr(src), chr(src+i)))
+            print('path cost: {}'.format(dist[i]))
+            path = self.getPath(parent,i)
+            print('path taken: {}'.format(path))
+            # self.printPath(parent,i)
   
   
     '''Function that implements Dijkstra's single source shortest path
