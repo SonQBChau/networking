@@ -63,13 +63,12 @@ class Graph:
     # the constructed distance
     # array
     def printSolution(self, dist, parent):
-        # src = 0
-       
         src = ord('u')
-        print("Vertex \t\tDistance from Source\tPath")
+        cha = chr(src)
         for i in range(0, len(dist)):
+            node = chr(src+i)
             reserve_path = ''
-            print('{} ==> {}:'.format(chr(src), chr(src+i)))
+            print('{} ==> {}:'.format(cha, node))
             print('path cost: {}'.format(dist[i]))
             path = self.getPath(parent,i)
             
