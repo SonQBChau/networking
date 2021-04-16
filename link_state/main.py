@@ -67,7 +67,7 @@ class Graph:
        
         src = ord('u')
         print("Vertex \t\tDistance from Source\tPath")
-        for i in range(1, len(dist)):
+        for i in range(0, len(dist)):
             reserve_path = ''
             print('{} ==> {}:'.format(chr(src), chr(src+i)))
             print('path cost: {}'.format(dist[i]))
