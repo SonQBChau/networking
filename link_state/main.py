@@ -55,8 +55,6 @@ class Graph:
         result += node
         #Base Case : If j is source
         if parent[j] == -1 : 
-            # print (chr(src+j), end=', '),
-            # return
             return result
         return self.getPath(parent, parent[j], result=result)
  
@@ -66,13 +64,20 @@ class Graph:
     # array
     def printSolution(self, dist, parent):
         # src = 0
+       
         src = ord('u')
         print("Vertex \t\tDistance from Source\tPath")
         for i in range(1, len(dist)):
+            reserve_path = ''
             print('{} ==> {}:'.format(chr(src), chr(src+i)))
             print('path cost: {}'.format(dist[i]))
             path = self.getPath(parent,i)
-            print('path taken: {}'.format(path))
+            
+            # Iterate over the string
+            for element in reversed(path):
+                reserve_path += element + ' --> '
+            reserve_path = reserve_path[:-5]
+            print('path taken: {}'.format(reserve_path))
             # self.printPath(parent,i)
   
   
