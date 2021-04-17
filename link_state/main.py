@@ -139,44 +139,27 @@ class Graph:
 
 
 def main():
-    # no_of_router = int(input("Enter the number of routers: "))
-    # matrix_name = input("Enter filename with cost matrix values: ")
-    # first_node_char = input("Enter character representation of first node: ")
+    print('OSPF Link-State (LS) Routing:')
+    print(('-' * 29))
+    # router_num = int(input("Enter the number of routers: "))
+    # input_name = input("Enter filename with cost matrix values: ")
+    # representation_node = input("Enter character representation of first node: ")
     # source_router = input("Enter the source router: ")
-    # print(f'You entered {value}')
+    #need error checking
 
-    array2D = []
-
+    matrix = []
+    # read matrix from file
     script_location = Path(__file__).absolute().parent
     file_location = script_location / 'text.txt'
     f = open(file_location, "r")
     for line in f.readlines():
-            # array2D.append(line.split(' '))
-            array2D.append([int(d) for d in line.split(' ')])
-    print(array2D)
+            matrix.append([int(d) for d in line.split(' ')])
+    print(matrix)
     f.close()
 
     # Driver program
     g = Graph()
-    graph = array2D
-    # graph = [[0, 4, 0, 0, 0, 0, 0, 8, 0],
-    #     [4, 0, 8, 0, 0, 0, 0, 11, 0],
-    #     [0, 8, 0, 7, 0, 4, 0, 0, 2],
-    #     [0, 0, 7, 0, 9, 14, 0, 0, 0],
-    #     [0, 0, 0, 9, 0, 10, 0, 0, 0],
-    #     [0, 0, 4, 14, 10, 0, 2, 0, 0],
-    #     [0, 0, 0, 0, 0, 2, 0, 1, 6],
-    #     [8, 11, 0, 0, 0, 0, 1, 0, 7],
-    #     [0, 0, 2, 0, 0, 0, 6, 7, 0]
-    #     ]
-
-#     graph =[[ 0, 2, 5, 1, 0, 0],
-# [2, 0, 3, 2, 0, 0],
-# [5, 3, 0, 3, 1, 5],
-# [1, 2, 3, 0, 1, 0],
-# [0, 0, 1, 1, 0, 2],
-# [0, 0, 5, 0, 2, 0]]
-
+    graph = matrix
     g.dijkstra(graph,0)
 
 
