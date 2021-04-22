@@ -79,31 +79,32 @@ def readFile(name):
     matrix = []
     script_location = Path(__file__).absolute().parent
     file_location = script_location / name
-    f = open(file_location, "r")
-    for line in f.readlines():
-            matrix.append([int(d) for d in line.split(' ')])
-    f.close()
+    try: 
+        with open(file_location, "r") as f: # file exists
+            for line in f.readlines():
+                    matrix.append([int(d) for d in line.split(' ')])
+    except IOError:
+        print("File not accessible")
+ 
     return matrix
 
 
 def main():
+    # print greeting
     print('OSPF Link-State (LS) Routing:')
     print(('-' * 29))
-    # router_num = int(input("Enter the number of routers: "))
-    # input_name = input("Enter filename with cost matrix values: ")
-    # representation_node = input("Enter character representation of first node: ")
-    # source_router = input("Enter the source router: ")
-    #need error checking
 
-    router_num = 0
-    input_name = 'text.txt'
-    representation_node = 'u'
-    source_router = 'v'
+    # get user input
+    router_num = int(input("Enter the number of routers: "))
+    input_name = input("Enter filename with cost matrix values: ")
+    representation_node = input("Enter character representation of first node: ")
+    source_router = input("Enter the source router: ")
+
     source_index = ord(source_router) - ord(representation_node)
-
     matrix = readFile(input_name)
-    dist, parent = runLinkState(matrix,source_index)
-    printSolution(dist,parent, representation_node, source_router)
+    if len(matrix) != 0:
+        dist, parent = runLinkState(matrix,source_index)
+        printSolution(dist,parent, representation_node, source_router)
 
 
 if __name__ == "__main__":
