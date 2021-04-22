@@ -52,6 +52,7 @@ def printSolution(dist, parent, representation_node, source_router):
 
 #########################################
 # RUN DIJKSTRA'S SHORTEST PATH ALGORITHM
+# https://www.geeksforgeeks.org/printing-paths-dijkstras-shortest-path-algorithm/
 #########################################
 def runLinkState(graph, src):
         row = len(graph)
