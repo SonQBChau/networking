@@ -1,4 +1,5 @@
-Socket UDP programming. The client will send 10 times a message PING and the server will reply with a message PONG.
+### Socket UDP programming. 
+The client will send 10 times a message PING and the server will reply with a message PONG.
 
 This project is written in python3. 
 
