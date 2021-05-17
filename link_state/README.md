@@ -11,6 +11,9 @@ This project is written in python3.
  ```python3 linkState.py```
 
 >Enter the number of routers: 6
+>
 >Enter filename with cost matrix values: fig5_3
+>
 >Enter character representation of first node: u
+>
 >Enter the source router: v
